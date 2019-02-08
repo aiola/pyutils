@@ -54,6 +54,7 @@ class DMesonJetCompare:
         self.fLinLowerSpace = 0.2  # this factor will be used to adjust the y axis in linear scale
         self.fLegTextSize = 20
         self.fLegLineHeight = 0.04
+        self.fFixedLowerRatioBound = None
 
         self.fBaselineForRatio = None
         self.fSeparateBaselineUncertainty = False
@@ -423,6 +424,8 @@ class DMesonJetCompare:
             if self.fDoRatioLegend:
                 self.fCanvasRatio.cd()
                 self.fLegendRatio.Draw()
+        if not self.fFixedLowerRatioBound is None:
+            self.fMainRatioHistogram.SetMinimum(self.fFixedLowerRatioBound)
 
         if not self.fMaxSpectrum is None and not self.fMinSpectrum is None and self.fDoSpectraPlot:
             print("Adjusting y limits for Spectrum")
