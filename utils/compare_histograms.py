@@ -5,7 +5,7 @@ import math
 import random
 from enum import Enum
 import ROOT
-import root_utils
+from utils import root_utils
 
 class CompareHistograms:
     """ Compare histograms
@@ -271,7 +271,7 @@ class CompareHistograms:
         fitR = h.Fit(fit_func, "NS")
         fitOk = int(fitR)
         if not fitOk == 0: return None
-        h_fit = utils.soft_clone(templateH, "{0}_fith".format(h.GetName()))
+        h_fit = root_utils.soft_clone(templateH, "{0}_fith".format(h.GetName()))
         for ibin in range(1, h_fit.GetNbinsX() + 1):
             valErr = fit_func.IntegralError(h_fit.GetXaxis().GetBinLowEdge(ibin), h_fit.GetXaxis().GetBinUpEdge(ibin)) / (h_fit.GetXaxis().GetBinUpEdge(ibin) - h_fit.GetXaxis().GetBinLowEdge(ibin))
             val = fit_func.Integral(h_fit.GetXaxis().GetBinLowEdge(ibin), h_fit.GetXaxis().GetBinUpEdge(ibin)) / (h_fit.GetXaxis().GetBinUpEdge(ibin) - h_fit.GetXaxis().GetBinLowEdge(ibin))
@@ -285,21 +285,21 @@ class CompareHistograms:
         fit_func.Draw("same")
         return h_fit
 
-    def RebinAndMakeConsistent(self, h, templateH):
-        return utils.Rebin1D(h, templateH.GetXaxis())
+    def rebin_and_make_consistent(self, h, templateH):
+        return root_utils.rebin_1D(h, templateH.GetXaxis())
 
-    def PlotRatio(self, color, marker, line, lwidth, h):
-        compBinning = utils.AxisCompare.CheckConsistency(h.GetXaxis(), self.baseline_for_ratio.GetXaxis())
+    def plot_ratio(self, color, marker, line, lwidth, h):
+        compBinning = root_utils.AxisCompare.check_consistency(h.GetXaxis(), self.baseline_for_ratio.GetXaxis())
         print("Result of the binning comparison between {} and {} is: {}".format(h.GetName(), self.baseline_for_ratio.GetName(), compBinning))
-        if compBinning == utils.AxisCompare.Identical:
+        if compBinning == root_utils.AxisCompare.Identical:
             hRatio = h.Clone("{0}_Ratio".format(h.GetName()))
-        elif compBinning == utils.AxisCompare.ContainsSameBinning or compBinning == utils.AxisCompare.IsContainedSameBinning or compBinning == utils.AxisCompare.OverlapsSameBinning:
+        elif compBinning == root_utils.AxisCompare.ContainsSameBinning or compBinning == root_utils.AxisCompare.IsContainedSameBinning or compBinning == root_utils.AxisCompare.OverlapsSameBinning:
             print("Trying to rebin histogram {0}".format(h.GetName()))
             hRatio = self.RebinAndMakeConsistent(h, self.baseline_for_ratio)
             if not hRatio:
                 print("Rebin unsuccessfull!")
                 return
-        elif compBinning == utils.AxisCompare.Contains or compBinning == utils.AxisCompare.IsContained or compBinning == utils.AxisCompare.Overlaps:
+        elif compBinning == root_utils.AxisCompare.Contains or compBinning == root_utils.AxisCompare.IsContained or compBinning == root_utils.AxisCompare.Overlaps:
             print("Need to rebin.")
             bins = "["
             for x in h.GetXaxis().GetXbins(): bins += "{}, ".format(x)
@@ -316,11 +316,11 @@ class CompareHistograms:
             if not hRatio:
                 print("Fit unsuccessfull!")
                 return
-        elif compBinning == utils.AxisCompare.NoOverlap:
+        elif compBinning == root_utils.AxisCompare.NoOverlap:
             print("The two histograms {}, {} have no overlap. Unable to generate a ratio.".format(h.GetName(), self.baseline_for_ratio.GetName()))
             return
         else:
-            print("DMesonJetCompare, PlotRatio: Should not end up here!")
+            print("compare_histograms, plot_ration: Should not end up here!")
             exit(1)
 
         hRatio.GetYaxis().SetTitle(self.y_axis_ratio)
@@ -344,18 +344,18 @@ class CompareHistograms:
         hRatio.Draw(self.opt_ratio)
         if not self.main_ratio_histogram:
             self.main_ratio_histogram = hRatio
-        m = utils.FindMinimum(hRatio, self.minimum_limit, not "hist" in self.opt_ratio)
-        if not m is None:
+        minimum = root_utils.find_minimum(hRatio, self.minimum_limit, not "hist" in self.opt_ratio)
+        if not minimum is None:
             if self.min_ratio is None:
-                self.min_ratio = m
+                self.min_ratio = minimum
             else:
-                self.min_ratio = min(self.min_ratio, m)
-        m = utils.FindMaximum(hRatio, self.minimum_limit, not "hist" in self.opt_ratio)
-        if not m is None:
+                self.min_ratio = min(self.min_ratio, minimum)
+        maximum = root_utils.find_maximum(hRatio, self.minimum_limit, not "hist" in self.opt_ratio)
+        if not maximum is None:
             if self.max_ratio is None:
-                self.max_ratio = m
+                self.max_ratio = maximum
             else:
-                self.max_ratio = max(self.max_ratio, m)
+                self.max_ratio = max(self.max_ratio, maximum)
 
         if not "same" in self.opt_ratio:
             self.opt_ratio += " same"
@@ -367,7 +367,7 @@ class CompareHistograms:
         while len(histos) + 1 > len(self.line_widths): self.line_widths += random.sample(self.line_widths[1:], len(self.line_widths) - 1)
         while len(histos) + 1 > len(self.fill_styles): self.fill_styles += random.sample(self.fill_styles[1:], len(self.fill_styles) - 1)
         self.results = []
-        print("CompareSpectra: {0}".format(self.name))
+        print("compare_spectra: {0}".format(self.name))
         self.baseline_histogram = baseline
         self.histograms = histos
         print("Baseline: {0}".format(self.baseline_histogram.GetName()))
@@ -384,14 +384,14 @@ class CompareHistograms:
             if self.do_spectra_plot:
                 self.plot_histogram(color, marker, line, linew, h)
             if self.do_ratio_plot:
-                self.PlotRatio(color, marker, line, linew, h)
+                self.plot_ratio(color, marker, line, linew, h)
         self.adjust_y_limits()
         self.generate_results()
         return self.results
 
     def compare_uncertainties(self, baseline, histos):
-        baseline_unc = utils.GetRelativeUncertaintyHistogram(baseline)
-        histos_unc = [utils.GetRelativeUncertaintyHistogram(h) for h in histos]
+        baseline_unc = root_utils.get_relative_uncertainty(baseline)
+        histos_unc = [root_utils.get_relative_uncertainty(h) for h in histos]
         self.CompareSpectra(baseline_unc, histos_unc)
         self.results.append(baseline_unc)
         self.results.extend(histos_unc)

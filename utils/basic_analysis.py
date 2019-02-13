@@ -18,7 +18,7 @@ class BasicHistogramContainer(object):
         """ Save the plots on disk
         """
         for canvas in self.canvases:
-            canvas.SaveAs("{}/{}_{}.pdf".format(path, self.name, canvas.GetName()))
+            canvas.SaveAs("{}/{}.pdf".format(path, canvas.GetName()))
 
     def basic_plot(self):
         """ Plots the results
@@ -36,12 +36,12 @@ class BasicHistogramContainer(object):
 class BasicAnalysis(object):
     """ Base class for any analysis
     """
-    def __init__(self, config):
+    def __init__(self, config, debug=False):
         self.path = config["path"]
         self.tree_name = config["tree_name"]
         self.current_tree = None
         self.current_file = None
-        self.debug = False
+        self.debug = debug
         self.histogram_containers = dict()
         self.canvases = []
         self.histograms_on_canvases = []
@@ -73,14 +73,16 @@ class BasicAnalysis(object):
     def save_plots(self):
         """ Save the plots on disk
         """
+        for canvas in self.canvases:
+            canvas.SaveAs("{}/{}.pdf".format(self.path, canvas.GetName()))
         for histogram_container in self.histogram_containers.itervalues():
             histogram_container.save_plots(self.path)
 
 class SingleFileAnalysis(BasicAnalysis):
     """ Base class for analysis based on a single ROOT input file
     """
-    def __init__(self, config):
-        BasicAnalysis.__init__(self, config)
+    def __init__(self, config, debug=False):
+        BasicAnalysis.__init__(self, config, debug)
         self.file_name = config["file_name"]
 
     def open_tree_from_file(self):
@@ -92,8 +94,8 @@ class SingleFileAnalysis(BasicAnalysis):
 class MultiFileAnalysis(BasicAnalysis):
     """ Base class for analysis based on multiple ROOT input files
     """
-    def __init__(self, config):
-        BasicAnalysis.__init__(self, config)
+    def __init__(self, config, debug=False):
+        BasicAnalysis.__init__(self, config, debug)
         self.file_names = config["file_names"]
         self.canvases = []
         self.current_file_name = None
