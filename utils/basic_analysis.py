@@ -2,6 +2,7 @@
 Usage: ipython -i basic_analysis.py config.yaml
 """
 
+import os
 import exceptions
 import ROOT
 
@@ -45,6 +46,7 @@ class BasicAnalysis(object):
         self.histogram_containers = dict()
         self.canvases = []
         self.histograms_on_canvases = []
+        self.output_path = "plots"
 
     def open_tree(self, file_name):
         """ Open the Sbt ntuple
@@ -62,21 +64,36 @@ class BasicAnalysis(object):
         """ Build the histograms where the ntuple will be projected
         """
         for histogram_container in self.histogram_containers.itervalues():
-            histogram_container.build_histograms()
+            if isinstance(histogram_container, BasicHistogramContainer):
+                histogram_container.build_histograms()
+            elif isinstance(histogram_container, list):
+                for container_inside in histogram_container:
+                    container_inside.build_histograms()
 
     def basic_plot(self):
         """ Plotting
         """
         for histogram_container in self.histogram_containers.itervalues():
-            histogram_container.basic_plot()
+            if isinstance(histogram_container, BasicHistogramContainer):
+                histogram_container.basic_plot()
+            elif isinstance(histogram_container, list):
+                for container_inside in histogram_container:
+                    container_inside.basic_plot()
 
     def save_plots(self):
         """ Save the plots on disk
         """
+        output_path = "{}/../{}".format(self.path, self.output_path)
+        if not os.path.exists(output_path):
+            os.makedirs(output_path)
         for canvas in self.canvases:
-            canvas.SaveAs("{}/{}.pdf".format(self.path, canvas.GetName()))
+            canvas.SaveAs("{}/{}.pdf".format(output_path, canvas.GetName()))
         for histogram_container in self.histogram_containers.itervalues():
-            histogram_container.save_plots(self.path)
+            if isinstance(histogram_container, BasicHistogramContainer):
+                histogram_container.save_plots(output_path)
+            elif isinstance(histogram_container, list):
+                for container_inside in histogram_container:
+                    container_inside.save_plots(output_path)
 
 class SingleFileAnalysis(BasicAnalysis):
     """ Base class for analysis based on a single ROOT input file
