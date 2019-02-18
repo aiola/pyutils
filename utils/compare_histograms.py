@@ -31,7 +31,7 @@ class CompareHistograms:
         self.colors = [ROOT.kBlack, ROOT.kBlue + 2, ROOT.kRed + 2, ROOT.kGreen + 2, ROOT.kOrange + 2, ROOT.kAzure + 2, ROOT.kMagenta + 2, ROOT.kCyan + 2, ROOT.kPink + 1, ROOT.kTeal + 2, ROOT.kYellow + 2]
         self.markers = [ROOT.kOpenCircle, ROOT.kFullCircle, ROOT.kFullSquare, ROOT.kFullTriangleUp, ROOT.kFullTriangleDown, ROOT.kFullDiamond, ROOT.kFullStar, ROOT.kStar, ROOT.kFullCross, ROOT.kMultiply, ROOT.kPlus]
         self.lines = [1, 2, 9, 5, 7, 10, 4, 3, 6, 8]
-        self.line_widths = [3] * 10
+        self.line_widths = [2] * 10
         self.fill_styles = [3001, 3002, 3003, 3004, 3005, 3006, 3007]
         self.main_histogram = None
         self.main_ratio_histogram = None
@@ -258,7 +258,7 @@ class CompareHistograms:
                 self.legend_spectra.AddEntry(h, h.GetTitle(), "pe")
                 if self.do_spectrum_legend == "stat": self.add_stat(h)
 
-    def FitAndMakeConsistent(self, h, templateH):
+    def fit_and_make_consistent(self, h, templateH):
         fit_func = ROOT.TF1("{0}_fit".format(h.GetName()), self.fit_function, h.GetXaxis().GetXmin(), h.GetXaxis().GetXmax())
         fit_func.SetParameter(0, 1)
         fit_func.SetParameter(1, -0.5)
@@ -295,7 +295,7 @@ class CompareHistograms:
             hRatio = h.Clone("{0}_Ratio".format(h.GetName()))
         elif compBinning == root_utils.AxisCompare.ContainsSameBinning or compBinning == root_utils.AxisCompare.IsContainedSameBinning or compBinning == root_utils.AxisCompare.OverlapsSameBinning:
             print("Trying to rebin histogram {0}".format(h.GetName()))
-            hRatio = self.RebinAndMakeConsistent(h, self.baseline_for_ratio)
+            hRatio = self.rebin_and_make_consistent(h, self.baseline_for_ratio)
             if not hRatio:
                 print("Rebin unsuccessfull!")
                 return
@@ -312,7 +312,7 @@ class CompareHistograms:
             bins += "]"
             print("Final binning: {}".format(bins))
             print("Trying to fit histogram {0} with function {1}".format(h.GetName(), self.fit_function))
-            hRatio = self.FitAndMakeConsistent(h, self.baseline_for_ratio)
+            hRatio = self.fit_and_make_consistent(h, self.baseline_for_ratio)
             if not hRatio:
                 print("Fit unsuccessfull!")
                 return
@@ -335,6 +335,7 @@ class CompareHistograms:
             hRatio.SetMarkerColor(color)
             hRatio.SetLineColor(color)
             hRatio.SetMarkerStyle(marker)
+            hRatio.SetLineStyle(1)
             hRatio.SetMarkerSize(self.marker_size)
             if self.do_ratio_legend: self.legend_ratio.AddEntry(hRatio, h.GetTitle(), "pe")
         self.ratios.append(hRatio)
