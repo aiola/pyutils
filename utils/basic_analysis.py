@@ -3,8 +3,123 @@ Usage: ipython -i basic_analysis.py config.yaml
 """
 
 import os
+import math
 import exceptions
 import ROOT
+
+class MeasuredQuantity(object):
+    def __init__(self, value, error, units=""):
+        if error < 0:
+            raise exceptions.ValueError()
+        if units == "%":
+            value *= 100
+            error *= 100
+        self.value = value
+        self.error = error
+        self.units = units
+
+    def is_significant(self):
+        return self.value / self.error > 1.0
+
+    def calculate_precision(self):
+        if self.error == 0:
+            return int("inf")
+        
+        vErrLog10 = math.log10(self.error)
+        if vErrLog10 < 0:
+            return int(math.floor(vErrLog10))
+        else:
+            return int(math.ceil(vErrLog10))
+
+    def to_string(self, pm = "#pm"):
+        precision = self.calculate_precision()
+        abs_precision = abs(precision)
+        if abs_precision > 3:
+            if precision > 0:
+                exp = precision - 1
+            else:
+                exp = precision + 1
+            result = "({value:.1f} {pm} {error:.1f}) #times 10^{exp}".format(value = self.value / (10**exp), error = self.error / (10**exp), exp=exp, pm=pm)
+        else:
+            format_string = "{{value:.{prec}f}} {{pm}} {{error:.{prec}f}}".format(prec = abs_precision)
+            result = format_string.format(value = self.value, error=self.error, pm=pm)
+        if self.units:
+            result += " {}".format(self.units)
+        return result
+
+    def __str__(self):
+        return self.to_string("+/-")
+
+    def __add__(self, other):
+        if isinstance(other, MeasuredQuantity):
+            if self.units != other.units:
+                return NotImplemented
+            return MeasuredQuantity(self.value + other.value, math.sqrt(self.error**2 + other.error**2), self.units)
+        elif isinstance(other, (int, float)):
+            if self.units:
+                return NotImplemented
+            return MeasuredQuantity(self.value + other, self.error)
+        return NotImplemented
+
+    def __neg__(self):
+        return MeasuredQuantity(-self.value, self.error, self.units)
+
+    def __sub__(self, other):
+        return self + (-other)
+    
+    def __mul__(self, other):
+        if isinstance(other, MeasuredQuantity):
+            value = self.value * other.value
+            error = math.sqrt(self.error**2 / self.value**2 + other.error**2 / other.value**2) * value
+            units = self.units
+            if units and other.units:
+                if units == other.units:
+                    if units == "%":
+                        value /= 100
+                        error /= 100
+                    else:
+                        units = "({})^2".format(units)
+                else:
+                    units += " " + other.units
+            return MeasuredQuantity(value, error, units)
+        elif isinstance(other, (int, float)):
+            return MeasuredQuantity(self.value * other, self.error * other)
+        else:
+            return NotImplemented
+    
+    def __invert__(self):
+        if self.units != "%":
+            return MeasuredQuantity(1 / self.value, self.error / self.value**2, self.units)
+        return NotImplemented
+
+    def __div__(self, other):
+        return self * (~other)
+
+    def __lt__(self, other):
+        if isinstance(other, MeasuredQuantity):
+            return self.value + self.error < other.value - other.error
+        elif isinstance(other, (int, float)):
+            return self.value + self.error < other
+        return NotImplemented
+
+    def __gt__(self, other):
+        if isinstance(other, MeasuredQuantity):
+            return self.value + self.error > other.value - other.error
+        elif isinstance(other, (int, float)):
+            return self.value + self.error > other
+        return NotImplemented
+
+    def ___le__(self, other):
+        return not self > other
+
+    def __ge__(self, other):
+        return not self < other
+
+    def __ne__(self, other):
+        return self > other or self < other
+
+    def __eq__(self, other):
+        return not self != other
 
 class BasicHistogramContainer(object):
     """ Histogram container
@@ -114,7 +229,6 @@ class MultiFileAnalysis(BasicAnalysis):
     def __init__(self, config, debug=False):
         BasicAnalysis.__init__(self, config, debug)
         self.file_names = config["file_names"]
-        self.canvases = []
         self.current_file_name = None
         self.current_file_title = None
 
