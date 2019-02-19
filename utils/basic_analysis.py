@@ -167,7 +167,7 @@ class BasicAnalysis(object):
         self.histogram_containers = dict()
         self.canvases = []
         self.histograms_on_canvases = []
-        self.output_path = "plots"
+        self.output_path = config["output_path"]
 
     def open_tree(self, file_name):
         """ Open the Sbt ntuple
