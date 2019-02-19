@@ -21,6 +21,8 @@ class MeasuredQuantity(object):
         self.units = units
 
     def is_significant(self):
+        if self.value == 0:
+            return self.error == 0
         return self.error / math.fabs(self.value) < 1.0
 
     def calculate_precision(self):
