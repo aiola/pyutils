@@ -11,6 +11,8 @@ class MeasuredQuantity(object):
     def __init__(self, value, error, units=""):
         if error < 0:
             raise exceptions.ValueError()
+        if math.isnan(value) or math.isnan(error):
+            raise exceptions.ValueError()
         if units == "%":
             value *= 100
             error *= 100
@@ -19,7 +21,7 @@ class MeasuredQuantity(object):
         self.units = units
 
     def is_significant(self):
-        return self.value / self.error > 1.0
+        return self.error / math.fabs(self.value) < 1.0
 
     def calculate_precision(self):
         if self.error == 0:
@@ -33,6 +35,8 @@ class MeasuredQuantity(object):
 
     def to_string(self, pm = "#pm"):
         precision = self.calculate_precision()
+        if math.isinf(precision):
+            precision = 6
         abs_precision = abs(precision)
         if abs_precision > 3:
             if precision > 0:
