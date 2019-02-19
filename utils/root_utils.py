@@ -420,3 +420,13 @@ def fit_and_rebin(hstat, new_axis):
     results.append(canvas_ratio)
     ratio.Draw()
     return h_fit, results
+
+
+def is_variable_bin_size(histo):
+    if not histo.GetXaxis().IsVariableBinSize():
+        return False
+    binWidth = histo.GetXaxis().GetBinWidth(1)
+    for ibin in range(2, histo.GetNbinsX() + 1):
+        if histo.GetXaxis().GetBinWidth(ibin) != binWidth:
+            return False
+    return True
