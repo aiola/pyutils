@@ -50,7 +50,8 @@ class BasicAnalysis(object):
         self.histograms_on_canvases = []
         self.output_path = config["output_path"]
         self.data_frame = None
-        self.branches = config["branches"]
+        self.data_frames = dict()
+        self.data_frame_definitions = config["data_frames"]
         self.flatten = config["flatten"]
 
     def open_tree(self, file_name):
@@ -62,9 +63,12 @@ class BasicAnalysis(object):
             raise exceptions.RuntimeError("Could not open file '{}'".format(file_name))
         self.current_tree = self.current_file[self.tree_name]
         if not self.current_tree:
-            raise exceptions.RuntimeError(
-                "Could not find tree '{}' in file '{}'".format(self.tree_name, file_name))
-        self.data_frame = self.current_tree.pandas.df(self.branches, flatten=self.flatten)
+            raise exceptions.RuntimeError("Could not find tree '{}' in file '{}'".format(self.tree_name, file_name))
+        for df_def in self.data_frame_definitions:
+            df = self.current_tree.pandas.df(df_def["branches"], flatten=self.flatten)
+            self.data_frames[df_def["name"]] = df
+        if "default" in self.data_frames:
+            self.data_frame = self.data_frames["default"]
 
     def build_histograms(self):
         """ Build the histograms where the ntuple will be projected
