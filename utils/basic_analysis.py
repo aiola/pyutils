@@ -5,6 +5,7 @@ Usage: ipython -i basic_analysis.py config.yaml
 import os
 import math
 import exceptions
+import uproot
 import ROOT
 
 class MeasuredQuantity(object):
@@ -168,18 +169,22 @@ class BasicAnalysis(object):
         self.canvases = []
         self.histograms_on_canvases = []
         self.output_path = config["output_path"]
+        self.data_frame = None
+        self.branches = config["branches"]
+        self.flatten = config["flatten"]
 
     def open_tree(self, file_name):
         """ Open the Sbt ntuple
         """
         print("Opening file '{}'...".format(file_name))
-        self.current_file = ROOT.TFile(file_name)
-        if not self.current_file or self.current_file.IsZombie():
+        self.current_file = uproot.open(file_name)
+        if not self.current_file:
             raise exceptions.RuntimeError("Could not open file '{}'".format(file_name))
-        self.current_tree = self.current_file.Get(self.tree_name)
+        self.current_tree = self.current_file[self.tree_name]
         if not self.current_tree:
             raise exceptions.RuntimeError(
                 "Could not find tree '{}' in file '{}'".format(self.tree_name, file_name))
+        self.data_frame = self.current_tree.pandas.df(self.branches, flatten=self.flatten)
 
     def build_histograms(self):
         """ Build the histograms where the ntuple will be projected
