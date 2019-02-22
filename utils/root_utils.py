@@ -443,11 +443,9 @@ def is_axis_variable_bin_size(axis):
     return True
 
 
-def get_stats_pave(histo, x_1, y_1, units="", force_exponent=None):
-    """ Creates a ROOT TPaveText with the histogram stats
+def get_root_text_pave(x_1, y_1, width=0.4, height=0.1):
+    """ Creates a generic ROOT TPaveText with standard style
     """
-    width = 0.4
-    height = 0.1
     pave = ROOT.TPaveText(x_1, y_1, x_1 + width, y_1 - height, "brNDC")
     pave.SetBorderSize(0)
     pave.SetFillStyle(0)
@@ -455,6 +453,12 @@ def get_stats_pave(histo, x_1, y_1, units="", force_exponent=None):
     pave.SetTextFont(43)
     pave.SetTextSize(18)
     pave.SetTextAlign(12)
+    return pave
+
+def get_stats_pave(histo, x_1, y_1, units="", force_exponent=None):
+    """ Creates a ROOT TPaveText with the histogram stats
+    """
+    pave = get_root_text_pave(x_1, y_1)
     mean = histo.GetMean()
     std_dev = histo.GetStdDev()
     mean_err = histo.GetMeanError()
