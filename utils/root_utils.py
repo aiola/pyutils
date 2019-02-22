@@ -424,13 +424,24 @@ def fit_and_rebin(hstat, new_axis):
 
 
 def is_variable_bin_size(histo):
-    if not histo.GetXaxis().IsVariableBinSize():
+    """ Checks if a histogram has variable bin sizes
+    """
+    result = is_axis_variable_bin_size(histo.GetXaxis()) and \
+        (histo.GetDimension() == 1 or is_axis_variable_bin_size(histo.GetYaxis())) and \
+            (histo.GetDimension() <= 2 or is_axis_variable_bin_size(histo.GetZaxis()))
+    return result
+
+def is_axis_variable_bin_size(axis):
+    """ Checks if a axis has variable bin sizes
+    """
+    if not axis.IsVariableBinSize():
         return False
-    binWidth = histo.GetXaxis().GetBinWidth(1)
-    for ibin in range(2, histo.GetNbinsX() + 1):
-        if histo.GetXaxis().GetBinWidth(ibin) != binWidth:
+    bin_width = axis.GetBinWidth(1)
+    for ibin in range(2, axis.GetNbins() + 1):
+        if axis.GetBinWidth(ibin) != bin_width:
             return False
     return True
+
 
 def get_stats_pave(histo, x_1, y_1, units="", force_exponent=None):
     """ Creates a ROOT TPaveText with the histogram stats
