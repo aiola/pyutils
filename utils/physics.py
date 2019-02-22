@@ -18,6 +18,7 @@ class MeasuredQuantity(object):
         self.value = value
         self.error = error
         self.units = units
+        self.force_exponent = None
 
     def is_significant(self):
         """ Checks if the uncertainty is smaller than the value
@@ -45,17 +46,27 @@ class MeasuredQuantity(object):
         if math.isinf(precision):
             precision = 6
         abs_precision = abs(precision)
-        if abs_precision > 3:
+
+        if self.force_exponent is not None:
+            exp = self.force_exponent
+        elif abs_precision > 3:
             if precision > 0:
                 exp = precision - 1
             else:
                 exp = precision + 1
+        else:
+            exp = None
+
+        if exp is not None:
             value = self.value / (10**exp)
             error = self.error / (10**exp)
-            result = "({value:.1f} {pm} {error:.1f}) #times 10^{{{exp}}}".format(value=value, error=error, exp=exp, pm=plus_minus)
+            result = "({value:.1f} {pm} {error:.1f}) "
+                     "#times 10^{{{exp}}}".format(value=value, error=error, exp=exp, pm=plus_minus)
         else:
-            format_string = "{{value:.{prec}f}} {{pm}} {{error:.{prec}f}}".format(prec=abs_precision)
-            result = format_string.format(value = self.value, error=self.error, pm=plus_minus)
+            format_string = "{{value:.{prec}f}} {{pm}}"
+                            " {{error:.{prec}f}}".format(prec=abs_precision)
+            result = format_string.format(value = self.value, error=self.error,\
+                pm=plus_minus)
         if self.units:
             result += " {}".format(self.units)
         return result
