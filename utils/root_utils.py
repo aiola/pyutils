@@ -6,6 +6,7 @@ import array
 from collections import OrderedDict
 from enum import Enum
 import ROOT
+from physics import MeasuredQuantity
 
 class AxisCompare(Enum):
     """ Compare axis of two ROOT histograms
@@ -430,3 +431,27 @@ def is_variable_bin_size(histo):
         if histo.GetXaxis().GetBinWidth(ibin) != binWidth:
             return False
     return True
+
+def get_stats_pave(histo, x_1, y_1, units="", force_exponent=None):
+    """ Creates a ROOT TPaveText with the histogram stats
+    """
+    width = 0.4
+    height = 0.1
+    pave = ROOT.TPaveText(x_1, y_1, x_1 + width, y_1 - height, "brNDC")
+    pave.SetBorderSize(0)
+    pave.SetFillStyle(0)
+    pave.SetFillColor(ROOT.kWhite)
+    pave.SetTextFont(43)
+    pave.SetTextSize(18)
+    pave.SetTextAlign(12)
+    mean = histo.GetMean()
+    std_dev = histo.GetStdDev()
+    mean_err = histo.GetMeanError()
+    std_dev_err = histo.GetStdDevError()
+    measured_mean = MeasuredQuantity(mean, mean_err, units)
+    measured_mean.force_exponent = force_exponent
+    measured_std_dev = MeasuredQuantity(std_dev, std_dev_err, units)
+    measured_std_dev.force_exponent = force_exponent
+    pave.AddText("Mean = " + measured_mean.to_string())
+    pave.AddText("Std. Dev. = " + measured_std_dev.to_string())
+    return pave
