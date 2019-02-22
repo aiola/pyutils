@@ -52,7 +52,7 @@ class MeasuredQuantity(object):
                 exp = precision + 1
             value = self.value / (10**exp)
             error = self.error / (10**exp)
-            result = "({value:.1f} {pm} {error:.1f}) #times 10^{exp}".format(value=value, error=error, exp=exp, pm=plus_minus)
+            result = "({value:.1f} {pm} {error:.1f}) #times 10^{{{exp}}}".format(value=value, error=error, exp=exp, pm=plus_minus)
         else:
             format_string = "{{value:.{prec}f}} {{pm}} {{error:.{prec}f}}".format(prec=abs_precision)
             result = format_string.format(value = self.value, error=self.error, pm=plus_minus)
