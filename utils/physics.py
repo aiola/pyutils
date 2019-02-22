@@ -31,7 +31,7 @@ class MeasuredQuantity(object):
         """ Calculates the number of significant digits from the uncertainty
         """
         if self.error == 0:
-            return int("inf")
+            return float("inf")
 
         err_log_10 = math.log10(self.error)
         if err_log_10 < 0:
