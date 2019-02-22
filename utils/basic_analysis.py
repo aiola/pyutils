@@ -3,7 +3,6 @@ Usage: ipython -i basic_analysis.py config.yaml
 """
 
 import os
-import math
 import exceptions
 import uproot
 import ROOT
