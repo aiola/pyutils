@@ -19,7 +19,7 @@ class MeasuredQuantity(object):
         self.error = error
         self.units = units
         self.force_exponent = None
-        self.precision = None
+        self.precision = float("nan")
         self.exponent = None
 
     def is_significant(self):
