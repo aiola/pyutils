@@ -19,6 +19,8 @@ class MeasuredQuantity(object):
         self.error = error
         self.units = units
         self.force_exponent = None
+        self.precision = None
+        self.exponent = None
 
     def is_significant(self):
         """ Checks if the uncertainty is smaller than the value
@@ -31,42 +33,64 @@ class MeasuredQuantity(object):
         """ Calculates the number of significant digits from the uncertainty
         """
         if self.error == 0:
-            return float("inf")
-
-        err_log_10 = math.log10(self.error)
-        if err_log_10 < 0:
-            return int(math.floor(err_log_10))
+            if self.value == 0:
+                self.precision = float("nan")
+                self.exponent = None
+            else:
+                v_log_10 = math.log10(abs(self.value))
+                if abs(v_log_10) > 3:
+                    if v_log_10 > 0:
+                        self.exponent = int(math.floor(v_log_10))
+                    else:
+                        self.exponent = int(math.ceil(v_log_10))
+                    self.precision = 6 + self.exponent
+                else:
+                    self.precision = 6
+                    self.exponent = None
         else:
-            return int(math.ceil(err_log_10))
+            err_log_10 = math.log10(self.error)
+            # precision is negative for error > 1
+            # precision is 0 for error = 1
+            # precision is positve for error < 1
+            if err_log_10 < 0:
+                self.precision = -int(math.floor(err_log_10))
+            else:
+                self.precision = -int(math.ceil(err_log_10))
+
+            if self.precision > 3:
+                # error is < 0.001
+                self.exponent = -self.precision + 1
+            elif self.precision < -3:
+                # error is > 1000
+                self.exponent = -self.precision - 1
+            else:
+                self.exponent = None
+        if self.force_exponent is not None:
+            self.exponent = self.force_exponent
 
     def to_string(self, plus_minus="#pm"):
         """ String representation
         """
-        precision = self.calculate_precision()
-        if math.isinf(precision):
-            precision = 6
-        abs_precision = abs(precision)
+        self.calculate_precision()
+        print(self.precision, self.exponent)
+        if math.isnan(self.precision):
+            return "0"
 
-        if self.force_exponent is not None:
-            exp = self.force_exponent
-        elif abs_precision > 3:
-            if precision > 0:
-                exp = precision - 1
-            else:
-                exp = precision + 1
-        else:
-            exp = None
-
-        if exp is not None:
-            value = self.value / (10**exp)
-            error = self.error / (10**exp)
+        if self.exponent is not None:
+            prec = abs(self.precision + self.exponent)
+            value = 1.0 * self.value / (10**self.exponent)
+            error = 1.0 * self.error / (10**self.exponent)
             format_string = "({{value:.{prec}f}} {{pm}} {{error:.{prec}f}}) #times 10^{{{{{{exp}}}}}}".\
-                format(prec=abs(precision-exp))
+                format(prec=prec)
             result = format_string.\
-                format(value=value, error=error, exp=exp, pm=plus_minus)
+                format(value=value, error=error, exp=self.exponent, pm=plus_minus)
         else:
+            if self.precision < 0:
+                prec = 0
+            else:
+                prec = self.precision
             format_string = "{{value:.{prec}f}} {{pm}} {{error:.{prec}f}}".\
-                format(prec=abs_precision)
+                format(prec=prec)
             result = format_string.\
                 format(value=self.value, error=self.error,pm=plus_minus)
         if self.units:
