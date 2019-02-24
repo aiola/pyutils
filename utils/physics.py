@@ -72,7 +72,6 @@ class MeasuredQuantity(object):
         """ String representation
         """
         self.calculate_precision()
-        print(self.precision, self.exponent)
         if math.isnan(self.precision):
             return "0"
 
