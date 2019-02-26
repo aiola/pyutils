@@ -44,6 +44,3 @@ class WeightedStats(object):
         sqrt_effective_entries = math.sqrt(self.effective_entries)
         self.std_err_mean = self.std_dev / sqrt_effective_entries
         self.std_err_std_dev = self.std_err_mean / math.sqrt(2)
-
-        print(self.mean, self.std_err_mean)
-        print(self.sumw, self.sumwerr2, self.sumwx, self.sumwx2)
