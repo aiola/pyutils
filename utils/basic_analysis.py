@@ -72,6 +72,7 @@ class BasicAnalysis(object):
     def build_histograms(self):
         """ Build the histograms where the ntuple will be projected
         """
+        print("Building histograms...")
         for histogram_container in self.histogram_containers.itervalues():
             if isinstance(histogram_container, BasicHistogramContainer):
                 histogram_container.build_histograms()
