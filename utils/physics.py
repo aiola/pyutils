@@ -29,10 +29,12 @@ class MeasuredQuantity(object):
             return self.error == 0
         return self.error / math.fabs(self.value) < 1.0
 
-    def calculate_precision(self):
+    def calculate_precision(self, error=None):
         """ Calculates the number of significant digits from the uncertainty
         """
-        if self.error == 0:
+        if error is None:
+            error = self.error
+        if error == 0:
             if self.value == 0:
                 self.precision = float("nan")
                 self.exponent = None
@@ -48,7 +50,7 @@ class MeasuredQuantity(object):
                     self.precision = 6
                     self.exponent = None
         else:
-            err_log_10 = math.log10(self.error)
+            err_log_10 = math.log10(error)
             # precision is negative for error > 1
             # precision is 0 for error = 1
             # precision is positve for error < 1
@@ -169,3 +171,55 @@ class MeasuredQuantity(object):
 
     def __eq__(self, other):
         return not self != other
+
+class MeasuredQuantityAsymmErrors(MeasuredQuantity):
+    """ Class that represents a measured quantiy with asymmetric errors and units
+    """
+    def __init__(self, value, error_up, error_low, units=""):
+        if error_up < 0 or error_low < 0:
+            raise exceptions.ValueError()
+        if math.isnan(value) or math.isnan(error_up) or math.isnan(error_low):
+            raise exceptions.ValueError()
+        if units == "%":
+            value *= 100
+            error_up *= 100
+            error_low *= 100
+        self.value = value
+        self.error_up = error_up
+        self.error_low = error_low
+        self.error = (error_up + error_low) / 2.0
+        self.units = units
+        self.force_exponent = None
+        self.precision = float("nan")
+        self.exponent = None
+        if max(self.error_low, self.error_up) / min(self.error_low, self.error_up) >= 1.5:
+            self.to_string = self.to_string_asymm
+
+    def to_string_asymm(self, _=""):
+        """ String representation
+        """
+        self.calculate_precision(max(self.error_low, self.error_up))
+        if math.isnan(self.precision):
+            return "0"
+
+        if self.exponent is not None:
+            prec = abs(self.precision + self.exponent)
+            value = 1.0 * self.value / (10**self.exponent)
+            error_up = 1.0 * self.error_up / (10**self.exponent)
+            error_low = 1.0 * self.error_low / (10**self.exponent)
+            format_string = "({{value:.{prec}f}} + {{error_up:.{prec}f}} - {{error_low:.{prec}f}}) #times 10^{{{{{{exp}}}}}}".\
+                format(prec=prec)
+            result = format_string.\
+                format(value=value, error_up=error_up, error_low=error_low, exp=self.exponent)
+        else:
+            if self.precision < 0:
+                prec = 0
+            else:
+                prec = self.precision
+            format_string = "{{value:.{prec}f}} + {{error_up:.{prec}f}} - {{error_low:.{prec}f}}".\
+                format(prec=prec)
+            result = format_string.\
+                format(value=self.value, error_up=self.error_up, error_low=self.error_low)
+        if self.units:
+            result += " {}".format(self.units)
+        return result
