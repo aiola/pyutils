@@ -169,7 +169,7 @@ def generate_multi_canvas(cname, n_pads):
     canvas.Divide(cols, rows)
     return canvas
 
-def find_minimum(histogram, limit=0., errors=True):
+def find_minimum_hist(histogram, limit=0., errors=True):
     """ Finds the minimum in a histogram, taking into account also errors
     Useful for plotting
     """
@@ -197,7 +197,52 @@ def find_minimum(histogram, limit=0., errors=True):
                     minimum = cont
     return minimum
 
-def find_maximum(histogram, limit=0., errors=True):
+def find_minimum_graph(graph, limit=0., errors=True):
+    """ Finds the minimum in a graph, taking into account also errors
+    Useful for plotting
+    """
+    minimum = None
+
+    for ipoint in xrange(0, graph.GetN()):
+        if errors:
+            cont = graph.GetX()[ipoint] - graph.GetErrorXlow(ipoint)
+        else:
+            cont = graph.GetX()[ipoint]
+        if cont <= limit:
+            continue
+        if minimum is None or cont < minimum:
+            minimum = cont
+
+    return minimum
+
+def find_minimum(histogram, limit=0., errors=True):
+    if isinstance(histogram, ROOT.TH1):
+        return find_minimum_hist(histogram, limit, errors)
+    elif isinstance(histogram, ROOT.TGraph):
+        return find_minimum_graph(histogram, limit, errors)
+    else:
+        print("Type of object '{}' not recognized!", histogram)
+        return None
+
+def find_maximum_graph(graph, limit=0., errors=True):
+    """ Finds the maximum in a graph, taking into account also errors
+    Useful for plotting
+    """
+    maximum = None
+
+    for ipoint in xrange(0, graph.GetN()):
+        if errors:
+            cont = graph.GetX()[ipoint] + graph.GetErrorXhigh(ipoint)
+        else:
+            cont = graph.GetX()[ipoint]
+        if cont <= limit:
+            continue
+        if maximum is None or cont > maximum:
+            maximum = cont
+
+    return maximum
+
+def find_maximum_hist(histogram, limit=0., errors=True):
     """ Finds the maximum in a histogram, taking into account also errors
     Useful for plotting
     """
@@ -223,6 +268,15 @@ def find_maximum(histogram, limit=0., errors=True):
                 if maximum is None or cont > maximum:
                     maximum = cont
     return maximum
+
+def find_maximum(histogram, limit=0., errors=True):
+    if isinstance(histogram, ROOT.TH1):
+        return find_maximum_hist(histogram, limit, errors)
+    elif isinstance(histogram, ROOT.TGraph):
+        return find_maximum_graph(histogram, limit, errors)
+    else:
+        print("Type of object '{}' not recognized!", histogram)
+        return None
 
 def divide_no_errors(ratio, den):
     """ Divides two histograms, ignoring errors

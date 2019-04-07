@@ -146,7 +146,12 @@ class CompareHistograms:
             self.opt_spectrum += "same"
 
         if not self.main_histogram:
-            self.main_histogram = self.baseline_histogram
+            if isinstance(self.baseline_histogram, ROOT.TH1):
+                self.main_histogram = self.baseline_histogram
+            elif isinstance(self.baseline_histogram, ROOT.TGraph):
+                self.main_histogram = self.baseline_histogram.GetHistogram()
+            else:
+                print("Type of object '{}' not recognized!".format(self.baseline_histogram))
         self.baseline_for_ratio = self.baseline_histogram.Clone("{0}_copy".format(self.baseline_histogram.GetName()))
 
         minimum = root_utils.find_minimum(self.baseline_histogram, self.minimum_limit, "hist" not in self.opt_spectrum_baseline)
@@ -371,6 +376,9 @@ class CompareHistograms:
         print("compare_spectra: {0}".format(self.name))
         self.baseline_histogram = baseline
         self.histograms = histos
+        if not isinstance(baseline, ROOT.TH1) and self.do_ratio_plot:
+            print("Ratio is only available for histograms. Option is disabled.")
+            self.do_ratio_plot = False
         print("Baseline: {0}".format(self.baseline_histogram.GetName()))
         for s in self.histograms:
             print(s.GetName())
