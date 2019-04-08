@@ -108,7 +108,8 @@ class CompareHistograms:
                 self.legend_spectra.SetTextFont(43)
                 self.legend_spectra.SetTextSize(self.leg_text_size)
 
-        if self.grid_y_spectrum: self.canvas_spectra.SetGridy()
+        if self.grid_y_spectrum:
+            self.canvas_spectra.SetGridy()
 
         if "hist" in self.opt_spectrum_baseline:
             self.baseline_histogram.SetLineColor(self.colors[0])
@@ -116,7 +117,8 @@ class CompareHistograms:
             self.baseline_histogram.SetLineStyle(self.lines[0])
             if self.do_spectrum_legend:
                 self.legend_spectra.AddEntry(self.baseline_histogram, self.baseline_histogram.GetTitle(), "l")
-                if self.do_spectrum_legend == "stat": self.add_stat(self.baseline_histogram)
+                if self.do_spectrum_legend == "stat":
+                    self.add_stat(self.baseline_histogram)
         elif "e2" in self.opt_spectrum_baseline:
             self.baseline_histogram.SetLineColor(self.colors[0])
             self.baseline_histogram.SetFillColor(self.colors[0])
@@ -125,7 +127,8 @@ class CompareHistograms:
             self.baseline_histogram.SetFillStyle(self.fill_styles[0])
             if self.do_spectrum_legend:
                 self.legend_spectra.AddEntry(self.baseline_histogram, self.baseline_histogram.GetTitle(), "f")
-                if self.do_spectrum_legend == "stat": self.add_stat(self.baseline_histogram)
+                if self.do_spectrum_legend == "stat":
+                    self.add_stat(self.baseline_histogram)
         else:
             self.baseline_histogram.SetMarkerColor(self.colors[0])
             self.baseline_histogram.SetLineColor(self.colors[0])
@@ -133,11 +136,19 @@ class CompareHistograms:
             self.baseline_histogram.SetMarkerSize(self.marker_size)
             if self.do_spectrum_legend:
                 self.legend_spectra.AddEntry(self.baseline_histogram, self.baseline_histogram.GetTitle(), "pe")
-                if self.do_spectrum_legend == "stat": self.add_stat(self.baseline_histogram)
+                if self.do_spectrum_legend == "stat":
+                    self.add_stat(self.baseline_histogram)
 
         if isinstance(self.baseline_histogram, ROOT.TGraph):
             if not "a" in self.opt_spectrum_baseline or not "A" in self.opt_spectrum_baseline:
                 self.opt_spectrum_baseline += "A"
+        
+        if len(self.baseline_histogram.GetListOfFunctions()) > 0:
+            for obj in self.baseline_histogram.GetListOfFunctions():
+                if isinstance(obj, ROOT.TF1):
+                    obj.SetLineColor(self.colors[0])
+                    obj.SetLineStyle(self.lines[0])
+                    obj.SetLineWidth(self.line_widths[0])
 
         print("Plotting histogram '{0}' with option '{1}'".format(self.baseline_histogram.GetName(), self.opt_spectrum_baseline))
         self.canvas_spectra.cd()
@@ -257,7 +268,8 @@ class CompareHistograms:
             h.SetLineStyle(line)
             if self.do_spectrum_legend:
                 self.legend_spectra.AddEntry(h, h.GetTitle(), "l")
-                if self.do_spectrum_legend == "stat": self.add_stat(h)
+                if self.do_spectrum_legend == "stat":
+                    self.add_stat(h)
         else:
             h.SetMarkerColor(color)
             h.SetLineColor(color)
@@ -265,7 +277,15 @@ class CompareHistograms:
             h.SetMarkerSize(self.marker_size)
             if self.do_spectrum_legend:
                 self.legend_spectra.AddEntry(h, h.GetTitle(), "pe")
-                if self.do_spectrum_legend == "stat": self.add_stat(h)
+                if self.do_spectrum_legend == "stat":
+                    self.add_stat(h)
+
+        if len(h.GetListOfFunctions()) > 0:
+            for obj in h.GetListOfFunctions():
+                if isinstance(obj, ROOT.TF1):
+                    obj.SetLineColor(color)
+                    obj.SetLineStyle(line)
+                    obj.SetLineWidth(lwidth)
 
     def fit_and_make_consistent(self, h, templateH):
         fit_func = ROOT.TF1("{0}_fit".format(h.GetName()), self.fit_function, h.GetXaxis().GetXmin(), h.GetXaxis().GetXmax())
