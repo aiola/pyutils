@@ -205,14 +205,14 @@ def find_minimum_graph(graph, limit=0., errors=True):
 
     for ipoint in xrange(0, graph.GetN()):
         if errors:
-            cont = graph.GetX()[ipoint] - graph.GetErrorXlow(ipoint)
+            cont = graph.GetY()[ipoint] - graph.GetErrorYlow(ipoint)
         else:
-            cont = graph.GetX()[ipoint]
+            cont = graph.GetY()[ipoint]
         if cont <= limit:
             continue
         if minimum is None or cont < minimum:
             minimum = cont
-
+    print("minimum is {}".format(minimum))
     return minimum
 
 def find_minimum(histogram, limit=0., errors=True):
@@ -232,14 +232,14 @@ def find_maximum_graph(graph, limit=0., errors=True):
 
     for ipoint in xrange(0, graph.GetN()):
         if errors:
-            cont = graph.GetX()[ipoint] + graph.GetErrorXhigh(ipoint)
+            cont = graph.GetY()[ipoint] + graph.GetErrorYhigh(ipoint)
         else:
-            cont = graph.GetX()[ipoint]
+            cont = graph.GetY()[ipoint]
         if cont <= limit:
             continue
         if maximum is None or cont > maximum:
             maximum = cont
-
+    print("maximum is {}".format(maximum))
     return maximum
 
 def find_maximum_hist(histogram, limit=0., errors=True):
