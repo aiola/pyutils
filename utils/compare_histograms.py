@@ -135,6 +135,10 @@ class CompareHistograms:
                 self.legend_spectra.AddEntry(self.baseline_histogram, self.baseline_histogram.GetTitle(), "pe")
                 if self.do_spectrum_legend == "stat": self.add_stat(self.baseline_histogram)
 
+        if isinstance(self.baseline_histogram, ROOT.TGraph):
+            if not "a" in self.opt_spectrum_baseline or not "A" in self.opt_spectrum_baseline:
+                self.opt_spectrum_baseline += "A"
+
         print("Plotting histogram '{0}' with option '{1}'".format(self.baseline_histogram.GetName(), self.opt_spectrum_baseline))
         self.canvas_spectra.cd()
         self.baseline_histogram.Draw(self.opt_spectrum_baseline)
@@ -396,6 +400,8 @@ class CompareHistograms:
                 self.plot_ratio(color, marker, line, linew, h)
         self.adjust_y_limits()
         self.generate_results()
+        if self.main_histogram not in self.histograms:
+            self.results.append(self.main_histogram)
         return self.results
 
     def compare_uncertainties(self, baseline, histos):
