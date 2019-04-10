@@ -6,6 +6,7 @@ import random
 from enum import Enum
 import ROOT
 from utils import root_utils
+from utils.physics import MeasuredQuantity
 
 class CompareHistograms:
     """ Compare histograms
@@ -52,8 +53,8 @@ class CompareHistograms:
         self.log_lower_space = 2  # this factor will be used to adjust the y axis in log scale
         self.lin_upper_space = 0.9  # this factor will be used to adjust the y axis in linear scale
         self.lin_lower_space = 0.2  # this factor will be used to adjust the y axis in linear scale
-        self.leg_text_size = 20
-        self.leg_line_height = 0.04
+        self.leg_text_size = 18
+        self.leg_line_height = 0.06
         self.fixed_lower_ratio_bound = None
 
         self.baseline_for_ratio = None
@@ -83,7 +84,11 @@ class CompareHistograms:
                 self.ratio_relative_uncertainty.SetBinContent(ibin, 0)
 
     def add_stat(self, h):
-        entry = self.legend_spectra.AddEntry(ROOT.nullptr, "#mu={:.3f} {units}, #sigma={:.3f} {units}".format(h.GetMean(), h.GetStdDev(), units=self.units), "")
+        mean = MeasuredQuantity(h.GetMean(), h.GetMeanError(), self.units)
+        sigma = MeasuredQuantity(h.GetStdDev(), h.GetStdDevError(), self.units)
+        entry = self.legend_spectra.AddEntry(ROOT.nullptr, "#mu = {}".format(mean.to_string()), "")
+        entry.SetTextSize(self.leg_text_size * 0.8)
+        entry = self.legend_spectra.AddEntry(ROOT.nullptr, "#sigma = {}".format(sigma.to_string()), "")
         entry.SetTextSize(self.leg_text_size * 0.8)
 
     def prepare_spectra_canvas(self):
@@ -92,7 +97,8 @@ class CompareHistograms:
             self.canvas_spectra = ROOT.TCanvas(self.name, self.name)
 
         if self.do_spectrum_legend:
-            if self.do_spectrum_legend == "stat": self.leg_line_height *= 2
+            if self.do_spectrum_legend == "stat":
+                self.leg_line_height *= 2.5
             if self.legend_spectra:
                 y1 = self.legend_spectra.GetY1() - self.leg_line_height * (len(self.histograms) + 1) / self.n_cols_leg_spectrum
                 if y1 < 0.2: y1 = 0.2
@@ -106,6 +112,7 @@ class CompareHistograms:
                 self.legend_spectra.SetFillStyle(0)
                 self.legend_spectra.SetBorderSize(0)
                 self.legend_spectra.SetTextFont(43)
+                self.legend_spectra.SetMargin(0.1)
                 self.legend_spectra.SetTextSize(self.leg_text_size)
 
         if self.grid_y_spectrum:
