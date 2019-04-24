@@ -5,8 +5,8 @@ import math
 import random
 from enum import Enum
 import ROOT
-from utils import root_utils
-from utils.physics import MeasuredQuantity
+import root_utils
+from physics import MeasuredQuantity
 
 class CompareHistograms:
     """ Compare histograms
