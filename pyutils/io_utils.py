@@ -8,5 +8,5 @@ def find_file(path, file_name):
     """
     for root, _, files in os.walk(path):
         for current_file in files:
-            if file == file_name:
+            if current_file == file_name:
                 yield os.path.join(root, current_file)
