@@ -9,3 +9,4 @@ from . import io_utils
 from . import physics
 from . import root_utils
 from . import stats
+from . import uproot_utils
