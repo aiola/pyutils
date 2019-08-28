@@ -70,7 +70,7 @@ class MeasuredQuantity(object):
         if self.force_exponent is not None:
             self.exponent = self.force_exponent
 
-    def to_string(self, plus_minus="#pm"):
+    def to_string(self, plus_minus=r'\pm', times=r'\times'):
         """ String representation
         """
         self.calculate_precision()
@@ -81,10 +81,10 @@ class MeasuredQuantity(object):
             prec = abs(self.precision + self.exponent)
             value = 1.0 * self.value / (10**self.exponent)
             error = 1.0 * self.error / (10**self.exponent)
-            format_string = "({{value:.{prec}f}} {{pm}} {{error:.{prec}f}}) #times 10^{{{{{{exp}}}}}}".\
+            format_string = "({{value:.{prec}f}} {{pm}} {{error:.{prec}f}}) {{times}} 10^{{{{{{exp}}}}}}".\
                 format(prec=prec)
             result = format_string.\
-                format(value=value, error=error, exp=self.exponent, pm=plus_minus)
+                format(value=value, error=error, exp=self.exponent, pm=plus_minus, times=times)
         else:
             if self.precision < 0:
                 prec = 0
@@ -99,7 +99,7 @@ class MeasuredQuantity(object):
         return result
 
     def __str__(self):
-        return self.to_string("+/-")
+        return self.to_string("+/-", "*")
 
     def __add__(self, other):
         if isinstance(other, MeasuredQuantity):
