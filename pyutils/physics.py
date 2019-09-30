@@ -56,8 +56,10 @@ class MeasuredQuantity(object):
             # precision is positve for error < 1
             if err_log_10 < 0:
                 self.precision = -int(math.floor(err_log_10))
-            else:
+            elif err_log_10 < float('inf'):
                 self.precision = -int(math.ceil(err_log_10))
+            else:
+                self.precision = 0
 
             if self.precision > 3:
                 # error is < 0.001
@@ -95,7 +97,7 @@ class MeasuredQuantity(object):
             result = format_string.\
                 format(value=self.value, error=self.error,pm=plus_minus)
         if self.units:
-            result += " {}".format(self.units)
+            result += "\, {}".format(self.units)
         return result
 
     def __str__(self):
@@ -121,8 +123,8 @@ class MeasuredQuantity(object):
     def __mul__(self, other):
         if isinstance(other, MeasuredQuantity):
             value = self.value * other.value
-            error = math.sqrt(self.error**2 / self.value**2 + other.error**2 / other.value**2) * value
-            units = self.units
+            error = math.sqrt(self.error**2 / self.value**2 + other.error**2 / other.value**2) * abs(value)
+            units = ""
             if units and other.units:
                 if units == other.units:
                     if units == "%":
@@ -132,9 +134,13 @@ class MeasuredQuantity(object):
                         units = "({})^2".format(units)
                 else:
                     units += " " + other.units
+            elif self.units:
+                units = self.units
+            elif other.units:
+                units = other.units
             return MeasuredQuantity(value, error, units)
         elif isinstance(other, (int, float)):
-            return MeasuredQuantity(self.value * other, self.error * other)
+            return MeasuredQuantity(self.value * other, self.error * other, self.units)
         else:
             return NotImplemented
 
