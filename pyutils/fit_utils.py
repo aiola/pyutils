@@ -5,6 +5,7 @@ import math
 import inspect
 import numpy as np
 from scipy.optimize import curve_fit
+import scipy.special as sc
 import matplotlib.pyplot as plt
 import physics
 
@@ -26,7 +27,10 @@ def double_gaus_norm(x, N1, mu1, sigma1, N2, mu2, sigma2):
 def double_gaus_norm_single_mean(x, mu, N, sigma1, f, sigma2):
   return gaus_norm(x, N*f, mu, sigma1) + gaus_norm(x, N*(1.-f), mu, sigma2)
 
-def crystal_ball(x, C, mu, sigma, alpha, n):
+def crystal_ball(x, S, mu, sigma, alpha, n):
+  beta = abs(alpha) * sigma
+  C = 1. * S / (n / beta / (n-1) * np.exp(-beta**2 / 2.0) +
+                sigma * np.sqrt(2 * math.pi) * sc.ndtr(beta))
   x = np.atleast_1d(x)
   nsigmas = (x - mu) / sigma
   A = np.power(n / np.abs(alpha), n) * np.exp(-alpha**2/2)
@@ -174,15 +178,27 @@ class lambda_fitter(inv_mass_fitter):
     return _expo
 
   @staticmethod
-  def lambda_bkg(x, x0, a, C):
-    return C * lambda_fitter.sqrt()(x, x0) * lambda_fitter.expo()(x, x0, a)
-
-  def __init__(self, isMC):
-    if isMC:
-      inv_mass_fitter.__init__(self, 'Double Gaussian', self.double_gaus_norm_fixed_v4(), None, None)
+  def lambda_bkg(bkg):
+    def _threshold_function(x, x0, a, C):
+      return C * lambda_fitter.sqrt()(x, x0) * lambda_fitter.expo()(x, x0, a)
+    if bkg == 'loose_selections':
+      return _threshold_function, '$C\sqrt{M - m_0}e^{-a(M-m_0)}$'
     else:
-      inv_mass_fitter.__init__(self, 'Double Gaussian', self.double_gaus_norm_fixed_v4(), '$C\sqrt{M - m_0}e^{-a(M-m_0)}$', self.lambda_bkg)
-    self.isMC = isMC
+      return linear, 'a * M + b'
+  
+  @staticmethod
+  def cb_plus_gaus():
+    def _cb_plus_gaus(x, S, mu, f, sigma1, alpha1, n1, sigma2):
+      return crystal_ball(x, S*f, mu, sigma1, alpha1, n1) + gaus_norm(x, S*(1.-f), mu, sigma2)
+    return _cb_plus_gaus
+
+  def __init__(self, bkg=None):
+    if bkg is None:
+      inv_mass_fitter.__init__(self, 'Crystal Ball + Gaussian', self.cb_plus_gaus(), None, None)
+    else:
+      func, name = self.lambda_bkg(bkg)
+      inv_mass_fitter.__init__(self, 'CB + Gaus', self.cb_plus_gaus(), name, func)
+    self.bkg = bkg
     self.generate_fit_summary = self.lambda_generate_fit_summary
 
   def lambda_generate_fit_summary(self):
@@ -191,21 +207,24 @@ class lambda_fitter(inv_mass_fitter):
     # Signal
     N = physics.MeasuredQuantity(self.params[0], self.cov[0][0]**0.5) * (1. / binw)
     mu = physics.MeasuredQuantity(self.params[1], self.cov[1][1]**0.5, "\mathrm{MeV}/c^2")
-    sigma = physics.MeasuredQuantity(self.params[2], self.cov[2][2]**0.5, "\mathrm{MeV}/c^2")
-    f = physics.MeasuredQuantity(self.params[3], self.cov[3][3]**0.5)
-    mu2 = mu + sigma * 2.
-    sigma2 = sigma * 3.
+    f = physics.MeasuredQuantity(self.params[2], self.cov[2][2]**0.5)
+    sigma1 = physics.MeasuredQuantity(self.params[3], self.cov[3][3]**0.5, "\mathrm{MeV}/c^2")
+    alpha1 = physics.MeasuredQuantity(self.params[4], self.cov[4][4]**0.5)
+    n1 = physics.MeasuredQuantity(self.params[5], self.cov[5][5]**0.5)
+    sigma2 = physics.MeasuredQuantity(self.params[6], self.cov[6][6]**0.5, "\mathrm{MeV}/c^2")
     fit_sum += "\n" + r'$S = {}$'.format(N.to_string())
-    fit_sum += "\n" + r'$\mu_1 = {}$'.format(mu.to_string())
-    fit_sum += "\n" + r'$\sigma_1 = {}$'.format(sigma.to_string())
-    fit_sum += "\n" + r'$\mu_2 = \mu_1 + 2\sigma_1 = {}$'.format(mu2.to_string())
-    fit_sum += "\n" + r'$\sigma_2 = 3\sigma_1 = {}$'.format(sigma2.to_string())
+    fit_sum += "\n" + r'$\mu = {}$'.format(mu.to_string())
     fit_sum += "\n" + r'$f = {}$'.format(f.to_string())
+    fit_sum += "\n" + r'$\sigma_1 = {}$'.format(sigma1.to_string())
+    fit_sum += "\n" + r'$\alpha_1 = {}$'.format(alpha1.to_string())
+    fit_sum += "\n" + r'$n_1 = {}$'.format(n1.to_string())
+    fit_sum += "\n" + r'$\sigma_2 = {}$'.format(sigma2.to_string())
+
     # Background
-    if not self.isMC:
-      m0 = physics.MeasuredQuantity(self.params[4], self.cov[4][4]**0.5, "\mathrm{MeV}/c^2")
-      a = physics.MeasuredQuantity(self.params[5], self.cov[5][5]**0.5)
-      C = physics.MeasuredQuantity(self.params[6], self.cov[6][6]**0.5)
+    if self.bkg == 'loose_selections':
+      m0 = physics.MeasuredQuantity(self.params[7], self.cov[7][7]**0.5, "\mathrm{MeV}/c^2")
+      a = physics.MeasuredQuantity(self.params[8], self.cov[8][8]**0.5)
+      C = physics.MeasuredQuantity(self.params[9], self.cov[9][9]**0.5)
       #min_mass = mu.value - sigma.value * 3.
       #max_mass = f.value * (mu2.value + sigma.value * 3.) - (f.value-1.) * (mu.value + sigma.value * 3.)
       #def integral_of_sqrt(m, m0):
@@ -217,6 +236,11 @@ class lambda_fitter(inv_mass_fitter):
       fit_sum += "\n" + r'$C = {}$'.format(C.to_string())
       #fit_sum += "\n" + r'$B = {:.3f}$ in [{:.0f},{:.0f}]'.format(Nbkg, min_mass, max_mass)
       #fit_sum += "\n" + r'$\frac{{S}}{{\sqrt{{S+B}}}} = {:.3f}$ in [{:.0f},{:.0f}]'.format(significance, min_mass, max_mass)
+    elif self.bkg == 'tight_selections':
+      a = physics.MeasuredQuantity(self.params[7], self.cov[7][7]**0.5)
+      b = physics.MeasuredQuantity(self.params[8], self.cov[8][8]**0.5)
+      fit_sum += "\n" + r'$a = {}$'.format(a.to_string())
+      fit_sum += "\n" + r'$b = {}$'.format(b.to_string())
     return fit_sum
 
 class lambdab_fitter(inv_mass_fitter):
@@ -226,12 +250,30 @@ class lambdab_fitter(inv_mass_fitter):
       return gaus_norm(x, N*f, mu, sigma) + gaus_norm(x, N*(1.-f), mu, sigma*nsigma)
     return _double_gaus_norm_single_mean_fixed_sigma
 
-  def __init__(self, isMC):
-    if isMC:
-      inv_mass_fitter.__init__(self, 'Double Gaussian', self.double_gaus_norm_single_mean_fixed_sigma(), None, None)
+  @staticmethod
+  def double_gaus_norm_single_mean():
+    def _double_gaus_norm_single_mean(x, N, mu, f, sigma1, sigma2):
+      return gaus_norm(x, N*f, mu, sigma1) + gaus_norm(x, N*(1.-f), mu, sigma2)
+    return _double_gaus_norm_single_mean
+
+  @staticmethod
+  def double_cb():
+    def _double_cb(x, S, mu, f, sigma1, alpha1, n1, sigma2, alpha2, n2):
+      return crystal_ball(x, S*f, mu, sigma1, alpha1, n1) + crystal_ball(x, S*(1.-f), mu, sigma2, alpha2, n2)
+    return _double_cb
+
+  @staticmethod
+  def double_sym_cb():
+    def _double_cb(x, S, mu, sigma, alpha, n):
+      return crystal_ball(x, S*0.5, mu, sigma, alpha, n) + crystal_ball(x, S*0.5, mu, sigma, -alpha, n)
+    return _double_cb
+
+  def __init__(self, bkg):
+    if bkg is None:
+      inv_mass_fitter.__init__(self, 'Double CB', self.double_cb(), None, None)
     else:
-      inv_mass_fitter.__init__(self, 'Double Gaussian', self.double_gaus_norm_single_mean_fixed_sigma(), 'Cubic', cubic)
-    self.isMC = isMC
+      inv_mass_fitter.__init__(self, 'Double Gaus', self.double_gaus_norm_single_mean(), 'Quadratic', quadratic)
+    self.bkg = bkg
     self.generate_fit_summary = self.lambdab_generate_fit_summary
 
   def lambdab_generate_fit_summary(self):
@@ -240,32 +282,42 @@ class lambdab_fitter(inv_mass_fitter):
     # Signal
     N = physics.MeasuredQuantity(self.params[0], self.cov[0][0]**0.5) * (1. / binw)
     mu = physics.MeasuredQuantity(self.params[1], self.cov[1][1]**0.5, "\mathrm{MeV}/c^2")
-    sigma = physics.MeasuredQuantity(self.params[2], self.cov[2][2]**0.5, "\mathrm{MeV}/c^2")
-    f = physics.MeasuredQuantity(self.params[3], self.cov[3][3]**0.5)
-    sigma2 = sigma * 3.5
+    f = physics.MeasuredQuantity(self.params[2], self.cov[2][2]**0.5)
+    
+    sigma1 = physics.MeasuredQuantity(self.params[3], self.cov[3][3]**0.5, "\mathrm{MeV}/c^2")
+    #alpha1 = physics.MeasuredQuantity(self.params[3], self.cov[3][3]**0.5)
+    #n1 = physics.MeasuredQuantity(self.params[4], self.cov[4][4]**0.5)
+    sigma2 = physics.MeasuredQuantity(self.params[4], self.cov[4][4]**0.5, "\mathrm{MeV}/c^2")
+    #alpha2 = physics.MeasuredQuantity(self.params[7], self.cov[7][7]**0.5)
+    #n2 = physics.MeasuredQuantity(self.params[8], self.cov[8][8]**0.5)
     fit_sum += "\n" + r'$S = {}$'.format(N.to_string())
-    fit_sum += "\n" + r'$\mu = {}$'.format(mu.to_string())
-    fit_sum += "\n" + r'$\sigma_1 = {}$'.format(sigma.to_string())
-    fit_sum += "\n" + r'$\sigma_2 = 3.5\sigma_1 = {}$'.format(sigma2.to_string())
     fit_sum += "\n" + r'$f = {}$'.format(f.to_string())
+    fit_sum += "\n" + r'$\mu = {}$'.format(mu.to_string())
+    
+    fit_sum += "\n" + r'$\sigma_1 = {}$'.format(sigma1.to_string())
+    #fit_sum += "\n" + r'$\alpha = {}$'.format(alpha1.to_string())
+    #fit_sum += "\n" + r'$n = {}$'.format(n1.to_string())
+    fit_sum += "\n" + r'$\sigma_2 = {}$'.format(sigma2.to_string())
+    #fit_sum += "\n" + r'$\alpha_2 = {}$'.format(alpha2.to_string())
+    #fit_sum += "\n" + r'$n_2 = {}$'.format(n2.to_string())
     # Background
-    if not self.isMC:
+    if self.bkg is not None:
       a = physics.MeasuredQuantity(self.params[4], self.cov[4][4]**0.5)
       b = physics.MeasuredQuantity(self.params[5], self.cov[5][5]**0.5)
       c = physics.MeasuredQuantity(self.params[6], self.cov[6][6]**0.5)
-      d = physics.MeasuredQuantity(self.params[7], self.cov[7][7]**0.5)
-      min_mass = mu - (sigma * f - sigma2 * (f-1.)) * 3.
-      max_mass = mu + (sigma * f - sigma2 * (f-1.)) * 3.
-      dimless_min_mass = min_mass * 1.
-      dimless_min_mass.units = ""
-      dimless_max_mass = max_mass * 1.
-      dimless_max_mass.units = ""
+      #d = physics.MeasuredQuantity(self.params[7], self.cov[7][7]**0.5)
+      #min_mass = mu - (sigma * f - sigma2 * (f-1.)) * 3.
+      #max_mass = mu + (sigma * f - sigma2 * (f-1.)) * 3.
+      #dimless_min_mass = min_mass * 1.
+      #dimless_min_mass.units = ""
+      #dimless_max_mass = max_mass * 1.
+      #dimless_max_mass.units = ""
       #Nbkg = ((a * (dimless_max_mass - dimless_min_mass) * 0.5 + b) * (dimless_max_mass - dimless_min_mass)) * (1. / binw)
       #significance = N.value / math.sqrt(Nbkg.value + N.value)
       fit_sum += "\n" + r'$a = {}$'.format(a.to_string())
       fit_sum += "\n" + r'$b = {}$'.format(b.to_string())
       fit_sum += "\n" + r'$c = {}$'.format(c.to_string())
-      fit_sum += "\n" + r'$d = {}$'.format(d.to_string())
+      #fit_sum += "\n" + r'$d = {}$'.format(d.to_string())
       #fit_sum += "\n" + r'$B = {}$ in [{:.0f},{:.0f}]'.format(Nbkg.to_string(), min_mass.value, max_mass.value)
       #fit_sum += "\n" + r'$\frac{{S}}{{\sqrt{{S+B}}}} = {:.3f}$ in [{:.0f},{:.0f}]'.format(significance, min_mass.value, max_mass.value)
     return fit_sum
