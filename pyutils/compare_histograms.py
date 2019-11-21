@@ -1,12 +1,14 @@
-#!/usr/bin/env python
-# compare histograms
+""" This module contains utilities for plotting histgrams comparisons.
+"""
 
 import math
 import random
-from enum import Enum
+import sys
+if sys.version_info <= (2, 7):
+    from enum import Enum
 import ROOT
-import root_utils
-from physics import MeasuredQuantity
+from . import root_utils
+from .physics import MeasuredQuantity
 
 class CompareHistograms:
     """ Compare histograms

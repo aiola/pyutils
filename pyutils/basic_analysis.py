@@ -1,9 +1,10 @@
-""" This module analyses the ntuples obtained from the Sbt software.
-Usage: ipython -i basic_analysis.py config.yaml
+""" This module provides basic analysis classes
 """
 
 import os
-import exceptions
+import sys
+if sys.version_info <= (2, 7):
+    from exceptions import *
 import uproot
 import ROOT
 
@@ -59,10 +60,10 @@ class BasicAnalysis(object):
         print("Opening file '{}'...".format(file_name))
         self.current_file = uproot.open(file_name)
         if not self.current_file:
-            raise exceptions.RuntimeError("Could not open file '{}'".format(file_name))
+            raise RuntimeError("Could not open file '{}'".format(file_name))
         self.current_tree = self.current_file[self.tree_name]
         if not self.current_tree:
-            raise exceptions.RuntimeError("Could not find tree '{}' in file '{}'".format(self.tree_name, file_name))
+            raise RuntimeError("Could not find tree '{}' in file '{}'".format(self.tree_name, file_name))
         for df_def in self.data_frame_definitions:
             df = self.current_tree.pandas.df(df_def["branches"], flatten=self.flatten)
             self.data_frames[df_def["name"]] = df

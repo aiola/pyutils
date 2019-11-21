@@ -7,7 +7,7 @@ import numpy as np
 from scipy.optimize import curve_fit
 import scipy.special as sc
 import matplotlib.pyplot as plt
-import physics
+from . import physics
 
 # Function library
 def gaus(x, C, mu, sigma):

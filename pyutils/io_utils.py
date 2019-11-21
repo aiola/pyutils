@@ -1,5 +1,5 @@
-#!/usr/bin/env python
-# I/O utilities
+""" This module contains I/O utilities.
+"""
 
 import os
 

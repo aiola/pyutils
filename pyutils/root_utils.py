@@ -1,12 +1,14 @@
-#!/usr/bin/env python
-# pyroot utilities
+""" This module contains ROOT utilities.
+"""
 
 import math
 import array
-from collections import OrderedDict
+import sys
 from enum import Enum
+if sys.version_info <= (2, 7):
+    from collections import OrderedDict
 import ROOT
-from physics import MeasuredQuantity
+from .physics import MeasuredQuantity
 
 class AxisCompare(Enum):
     """ Compare axis of two ROOT histograms

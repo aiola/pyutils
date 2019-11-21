@@ -1,3 +1,6 @@
+""" This module contains utilities for uproot.
+"""
+
 import pandas as pd
 
 def readEfficiently(tree, **kwargs):

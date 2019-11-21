@@ -1,7 +1,9 @@
 """ Physics utilities
 """
 
-import exceptions
+import sys
+if sys.version_info <= (2, 7):
+    from exceptions import *
 import math
 
 class MeasuredQuantity(object):
@@ -9,9 +11,9 @@ class MeasuredQuantity(object):
     """
     def __init__(self, value, error, units=""):
         if error < 0:
-            raise exceptions.ValueError()
+            raise ValueError()
         if math.isnan(value) or math.isnan(error):
-            raise exceptions.ValueError()
+            raise ValueError()
         if units == "%":
             value *= 100
             error *= 100
@@ -183,9 +185,9 @@ class MeasuredQuantityAsymmErrors(MeasuredQuantity):
     """
     def __init__(self, value, error_up, error_low, units=""):
         if error_up < 0 or error_low < 0:
-            raise exceptions.ValueError()
+            raise ValueError()
         if math.isnan(value) or math.isnan(error_up) or math.isnan(error_low):
-            raise exceptions.ValueError()
+            raise ValueError()
         if units == "%":
             value *= 100
             error_up *= 100
