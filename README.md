@@ -1,3 +1,3 @@
-# pyutils
+# pyrootutils
 
-Various utilities
+Various utilities for pyroot
